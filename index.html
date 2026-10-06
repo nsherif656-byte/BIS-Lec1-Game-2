@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIS Master: Information Systems & Data Hierarchy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        dark: {
+                            bg: '#0f172a',
+                            card: '#1e293b',
+                            border: '#334155'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            user-select: none;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+
+        .drag-item {
+            cursor: grab;
+            touch-action: none;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .drag-item:active {
+            cursor: grabbing;
+            transform: scale(1.03);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+        }
+
+        .drop-zone {
+            transition: all 0.2s ease;
+        }
+        .drop-zone.drag-over {
+            border-color: #3b82f6 !important;
+            background-color: rgba(59, 130, 246, 0.1) !important;
+            transform: scale(1.01);
+        }
+
+        .touch-dragging {
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.9;
+            transform: scale(1.05);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+        }
+
+        .tab-btn.active {
+            border-bottom: 3px solid #3b82f6;
+            color: #60a5fa;
+            background-color: rgba(30, 41, 59, 0.8);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between bg-slate-900 text-slate-100 p-3 sm:p-6">
+
+    <header class="max-w-6xl w-full mx-auto mb-6">
+        <div class="flex flex-col md:flex-row justify-between items-center gap-4 bg-slate-800/80 p-4 sm:p-5 rounded-2xl border border-slate-700/80 backdrop-blur-md shadow-xl">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-2xl shadow-lg shadow-blue-500/30">
+                    <i class="fa-solid fa-network-wired text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-400">
+                        AIS Quest: Data & Systems
+                    </h1>
+                    <p class="text-xs sm:text-sm text-slate-400">Master Accounting Information Systems Concepts</p>
+                </div>
+            </div>
+
+            <!-- Global Score & Progress -->
+            <div class="flex items-center gap-6 w-full md:w-auto justify-between md:justify-end">
+                <div class="bg-slate-900/80 px-4 py-2 rounded-xl border border-slate-700/60 flex items-center gap-3">
+                    <i class="fa-solid fa-trophy text-amber-400 text-lg"></i>
+                    <div>
+                        <div class="text-xs text-slate-400">Total Score</div>
+                        <div id="totalScoreDisplay" class="text-lg font-bold text-amber-400">0 / 300</div>
+                    </div>
+                </div>
+
+                <button onclick="resetWholeGame()" class="px-3 py-2 bg-slate-700/50 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-xs font-semibold transition border border-slate-600 flex items-center gap-2">
+                    <i class="fa-solid fa-rotate-right"></i> Reset
+                </button>
+            </div>
+        </div>
+
+        <!-- Level Selector Tabs -->
+        <div class="grid grid-cols-3 gap-2 mt-4 bg-slate-950/60 p-1.5 rounded-xl border border-slate-800">
+            <button id="tab1" onclick="switchLevel(1)" class="tab-btn active py-2.5 px-3 rounded-lg text-xs sm:text-sm font-bold text-slate-400 hover:text-slate-200 transition flex items-center justify-center gap-2">
+                <span class="w-6 h-6 rounded-full bg-slate-800 text-xs flex items-center justify-center border border-slate-700">1</span>
+                <span class="hidden sm:inline">Level 1:</span> DIK Hierarchy
+            </button>
+            <button id="tab2" onclick="switchLevel(2)" class="tab-btn py-2.5 px-3 rounded-lg text-xs sm:text-sm font-bold text-slate-400 hover:text-slate-200 transition flex items-center justify-center gap-2">
+                <span class="w-6 h-6 rounded-full bg-slate-800 text-xs flex items-center justify-center border border-slate-700">2</span>
+                <span class="hidden sm:inline">Level 2:</span> 6 IS Components
+            </button>
+            <button id="tab3" onclick="switchLevel(3)" class="tab-btn py-2.5 px-3 rounded-lg text-xs sm:text-sm font-bold text-slate-400 hover:text-slate-200 transition flex items-center justify-center gap-2">
+                <span class="w-6 h-6 rounded-full bg-slate-800 text-xs flex items-center justify-center border border-slate-700">3</span>
+                <span class="hidden sm:inline">Level 3:</span> Scenario Challenge
+            </button>
+        </div>
+    </header>
+
+    <main class="max-w-6xl w-full mx-auto flex-grow flex flex-col">
+
+        <!-- ================= LEVEL 1: DIK HIERARCHY ================= -->
+        <section id="level1" class="level-section flex-grow flex flex-col gap-5">
+            <div class="bg-slate-800/60 p-4 rounded-xl border border-slate-700/60 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                <div>
+                    <h2 class="text-lg font-bold text-purple-400 flex items-center gap-2">
+                        <i class="fa-solid fa-layer-group"></i> Level 1: Data, Information, Knowledge (DIK) Sorting
+                    </h2>
+                    <p class="text-xs sm:text-sm text-slate-300 mt-0.5">Drag each concept, definition, or example card into its matching bucket (Data, Information, or Knowledge).</p>
+                </div>
+                <div class="flex items-center gap-3 w-full md:w-auto justify-end">
+                    <button onclick="checkLevel1()" class="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-sm rounded-xl shadow-lg transition transform active:scale-95 flex items-center gap-2">
+                        <i class="fa-solid fa-circle-check"></i> Check Answers
+                    </button>
+                </div>
+            </div>
+
+            <!-- Items Pool -->
+            <div class="bg-slate-950/70 p-4 rounded-xl border border-slate-800">
+                <div class="text-xs font-semibold text-slate-400 mb-3 uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-hand-pointer"></i> Unassigned Cards Pool
+                </div>
+                <div id="dikPool" class="drag-pool min-h-[90px] flex flex-wrap gap-2.5 p-2 rounded-lg bg-slate-900/60 border border-slate-800" ondragover="allowDrop(event)" ondrop="drop(event, 'pool')">
+                    <!-- Dynamic draggable cards loaded here -->
+                </div>
+            </div>
+
+            <!-- 3 Target Buckets -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 flex-grow">
+                <!-- DATA BUCKET -->
+                <div class="drop-zone bg-slate-800/40 border-2 border-dashed border-purple-500/40 rounded-2xl p-4 flex flex-col" ondragover="allowDrop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)" ondrop="drop(event, 'Data')" data-category="Data">
+                    <div class="flex items-center gap-2 pb-3 mb-3 border-b border-purple-500/30">
+                        <div class="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold">D</div>
+                        <div>
+                            <h3 class="font-extrabold text-purple-300">DATA</h3>
+                            <p class="text-[11px] text-slate-400">Raw facts, unorganized records</p>
+                        </div>
+                    </div>
+                    <div id="dik-Data" class="zone-contents flex-grow flex flex-col gap-2 min-h-[140px] p-1"></div>
+                </div>
+
+                <!-- INFORMATION BUCKET -->
+                <div class="drop-zone bg-slate-800/40 border-2 border-dashed border-rose-500/40 rounded-2xl p-4 flex flex-col" ondragover="allowDrop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)" ondrop="drop(event, 'Information')" data-category="Information">
+                    <div class="flex items-center gap-2 pb-3 mb-3 border-b border-rose-500/30">
+                        <div class="w-8 h-8 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold">I</div>
+                        <div>
+                            <h3 class="font-extrabold text-rose-300">INFORMATION</h3>
+                            <p class="text-[11px] text-slate-400">Processed, organized with context</p>
+                        </div>
+                    </div>
+                    <div id="dik-Information" class="zone-contents flex-grow flex flex-col gap-2 min-h-[140px] p-1"></div>
+                </div>
+
+                <!-- KNOWLEDGE BUCKET -->
+                <div class="drop-zone bg-slate-800/40 border-2 border-dashed border-emerald-500/40 rounded-2xl p-4 flex flex-col" ondragover="allowDrop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)" ondrop="drop(event, 'Knowledge')" data-category="Knowledge">
+                    <div class="flex items-center gap-2 pb-3 mb-3 border-b border-emerald-500/30">
+                        <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">K</div>
+                        <div>
+                            <h3 class="font-extrabold text-emerald-300">KNOWLEDGE</h3>
+                            <p class="text-[11px] text-slate-400">Understanding, experience & analysis</p>
+                        </div>
+                    </div>
+                    <div id="dik-Knowledge" class="zone-contents flex-grow flex flex-col gap-2 min-h-[140px] p-1"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= LEVEL 2: 6 COMPONENTS OF IS ================= -->
+        <section id="level2" class="level-section hidden flex-grow flex flex-col gap-5">
+            <div class="bg-slate-800/60 p-4 rounded-xl border border-slate-700/60 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                <div>
+                    <h2 class="text-lg font-bold text-blue-400 flex items-center gap-2">
+                        <i class="fa-solid fa-cubes"></i> Level 2: Six Components of an Information System
+                    </h2>
+                    <p class="text-xs sm:text-sm text-slate-300 mt-0.5">Categorize each item or definition into one of the 6 foundational IS components.</p>
+                </div>
+                <div class="flex items-center gap-3 w-full md:w-auto justify-end">
+                    <button onclick="checkLevel2()" class="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold text-sm rounded-xl shadow-lg transition transform active:scale-95 flex items-center gap-2">
+                        <i class="fa-solid fa-circle-check"></i> Check Answers
+                    </button>
+                </div>
+            </div>
+
+            <!-- Items Pool -->
+            <div class="bg-slate-950/70 p-4 rounded-xl border border-slate-800">
+                <div class="text-xs font-semibold text-slate-400 mb-3 uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-hand-pointer"></i> Unassigned Cards Pool
+                </div>
+                <div id="compPool" class="drag-pool min-h-[90px] flex flex-wrap gap-2.5 p-2 rounded-lg bg-slate-900/60 border border-slate-800" ondragover="allowDrop(event)" ondrop="drop(event, 'pool')">
+                    <!-- Dynamic cards here -->
+                </div>
+            </div>
+
+            <!-- 6 Component Target Zones -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 flex-grow">
+                <!-- 1. People -->
+                <div class="drop-zone bg-slate-800/40 border-2 border-dashed border-indigo-500/40 rounded-xl p-3.5 flex flex-col" ondragover="allowDrop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)" ondrop="drop(event, 'People')" data-category="People">
+                    <div class="flex items-center gap-2 pb-2 mb-2 border-b border-indigo-500/30">
+                        <div class="w-7 h-7 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-xs"><i class="fa-solid fa-users"></i></div>
+                        <h3 class="font-bold text-indigo-300 text-sm">1. People</h3>
+                    </div>
+                    <div id="comp-People" class="zone-contents flex-grow flex flex-col gap-2 min-h-[110px] p-1"></div>
+                </div>
+
+                <!-- 2. Procedures -->
+                <div class="drop-zone bg-slate-800/40 border-2 border-dashed border-purple-500/40 rounded-xl p-3.5 flex flex-col" ondragover="allowDrop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)" ondrop="drop(event, 'Procedures')" data-category="Procedures">
+                    <div class="flex items-center gap-2 pb-2 mb-2 border-b border-purple-500/30">
+                        <div class="w-7 h-7 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold text-xs"><i class="fa-solid fa-book-bookmark"></i></div>
+                        <h3 class="font-bold text-purple-300 text-sm">2. Procedures</h3>
+                    </div>
+                    <div id="comp-Procedures" class="zone-contents flex-grow flex flex-col gap-2 min-h-[110px] p-1"></div>
+                </div>
+
+                <!-- 3. Software -->
+                <div class="drop-zone bg-slate-800/40 border-2 border-dashed border-sky-500/40 rounded-xl p-3.5 flex flex-col" ondragover="allowDrop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)" ondrop="drop(event, 'Software')" data-category="Software">
+                    <div class="flex items-center gap-2 pb-2 mb-2 border-b border-sky-500/30">
+                        <div class="w-7 h-7 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center font-bold text-xs"><i class="fa-solid fa-code"></i></div>
+                        <h3 class="font-bold text-sky-300 text-sm">3. Software</h3>
+                    </div>
+                    <div id="comp-Software" class="zone-contents flex-grow flex flex-col gap-2 min-h-[110px] p-1"></div>
+                </div>
+
+                <!-- 4. Hardware -->
+                <div class="drop-zone bg-slate-800/40 border-2 border-dashed border-emerald-500/40 rounded-xl p-3.5 flex flex-col" ondragover="allowDrop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)" ondrop="drop(event, 'Hardware')" data-category="Hardware">
+                    <div class="flex items-center gap-2 pb-2 mb-2 border-b border-emerald-500/30">
+                        <div class="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs"><i class="fa-solid fa-server"></i></div>
+                        <h3 class="font-bold text-emerald-300 text-sm">4. Hardware</h3>
+                    </div>
+                    <div id="comp-Hardware" class="zone-contents flex-grow flex flex-col gap-2 min-h-[110px] p-1"></div>
+                </div>
+
+                <!-- 5. Data -->
+                <div class="drop-zone bg-slate-800/40 border-2 border-dashed border-amber-500/40 rounded-xl p-3.5 flex flex-col" ondragover="allowDrop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)" ondrop="drop(event, 'Data')" data-category="Data">
+                    <div class="flex items-center gap-2 pb-2 mb-2 border-b border-amber-500/30">
+                        <div class="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-xs"><i class="fa-solid fa-database"></i></div>
+                        <h3 class="font-bold text-amber-300 text-sm">5. Data</h3>
+                    </div>
+                    <div id="comp-Data" class="zone-contents flex-grow flex flex-col gap-2 min-h-[110px] p-1"></div>
+                </div>
+
+                <!-- 6. Networks -->
+                <div class="drop-zone bg-slate-800/40 border-2 border-dashed border-teal-500/40 rounded-xl p-3.5 flex flex-col" ondragover="allowDrop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)" ondrop="drop(event, 'Networks')" data-category="Networks">
+                    <div class="flex items-center gap-2 pb-2 mb-2 border-b border-teal-500/30">
+                        <div class="w-7 h-7 rounded-lg bg-teal-500/20 text-teal-400 flex items-center justify-center font-bold text-xs"><i class="fa-solid fa-network-wired"></i></div>
+                        <h3 class="font-bold text-teal-300 text-sm">6. Networks</h3>
+                    </div>
+                    <div id="comp-Networks" class="zone-contents flex-grow flex flex-col gap-2 min-h-[110px] p-1"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= LEVEL 3: SCENARIO QUIZ ================= -->
+        <section id="level3" class="level-section hidden flex-grow flex flex-col gap-5">
+            <div class="bg-slate-800/60 p-4 rounded-xl border border-slate-700/60 flex justify-between items-center">
+                <div>
+                    <h2 class="text-lg font-bold text-emerald-400 flex items-center gap-2">
+                        <i class="fa-solid fa-lightbulb"></i> Level 3: AIS Scenario Master Challenge
+                    </h2>
+                    <p class="text-xs sm:text-sm text-slate-300 mt-0.5">Apply your AIS knowledge to real-world corporate and accounting scenarios.</p>
+                </div>
+                <div class="text-xs font-semibold px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-emerald-400" id="quizCounter">
+                    Question 1 of 5
+                </div>
+            </div>
+
+            <!-- Quiz Card -->
+            <div class="bg-slate-800/50 border border-slate-700/80 rounded-2xl p-6 shadow-xl flex flex-col justify-between flex-grow max-w-3xl mx-auto w-full">
+                <div>
+                    <!-- Scenario Tag -->
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-semibold mb-4 border border-indigo-500/30">
+                        <i class="fa-solid fa-briefcase"></i> <span id="quizCategory">Scenario Analysis</span>
+                    </div>
+
+                    <!-- Question Prompt -->
+                    <h3 id="quizQuestion" class="text-lg sm:text-xl font-bold text-white mb-6 leading-relaxed">
+                        Loading scenario...
+                    </h3>
+
+                    <!-- Options Container -->
+                    <div id="quizOptions" class="grid grid-cols-1 gap-3">
+                        <!-- Dynamic options here -->
+                    </div>
+                </div>
+
+                <!-- Question Explanation / Feedback -->
+                <div id="quizFeedback" class="mt-6 p-4 rounded-xl hidden border">
+                    <div id="quizFeedbackTitle" class="font-bold text-sm mb-1 flex items-center gap-2"></div>
+                    <p id="quizFeedbackText" class="text-xs sm:text-sm text-slate-300 leading-relaxed"></p>
+                    <button id="nextQuizBtn" onclick="nextQuestion()" class="mt-4 px-5 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-xs font-bold transition flex items-center gap-2">
+                        Next Scenario <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <div id="victoryOverlay" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-slate-800 border border-slate-700 max-w-lg w-full rounded-2xl p-6 sm:p-8 shadow-2xl text-center relative overflow-hidden">
+            <div class="w-20 h-20 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center text-4xl mx-auto mb-4 animate-bounce">
+                <i class="fa-solid fa-trophy"></i>
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-black text-white mb-2">AIS Master Accomplished!</h2>
+            <p class="text-slate-300 text-sm mb-6">You have demonstrated complete mastery over Accounting Information Systems concepts!</p>
+
+            <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-700/80 mb-6">
+                <div class="text-xs text-slate-400 uppercase tracking-wider font-semibold mb-1">Final AIS Score</div>
+                <div id="finalScoreText" class="text-4xl font-black text-amber-400">300 / 300</div>
+                <div class="text-xs text-emerald-400 mt-2 font-medium"><i class="fa-solid fa-star"></i> 100% Accuracy Rating</div>
+            </div>
+
+            <div class="flex gap-3 justify-center">
+                <button onclick="resetWholeGame()" class="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl text-sm transition shadow-lg flex items-center gap-2">
+                    <i class="fa-solid fa-rotate-right"></i> Play Again
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Web Audio API Sound System
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new AudioContext();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playSound(type) {
+            try {
+                initAudio();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                if (type === 'correct') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+                    osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.08); // E5
+                    osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.16); // G5
+                    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.35);
+                } else if (type === 'wrong') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, audioCtx.currentTime); // A3
+                    osc.frequency.setValueAtTime(174.61, audioCtx.currentTime + 0.1); // F3
+                    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.3);
+                } else if (type === 'drop') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.1);
+                }
+            } catch (e) {
+                console.log("Audio play error", e);
+            }
+        }
+
+        // --- GAME STATE ---
+        let currentLevel = 1;
+        let levelScores = { 1: 0, 2: 0, 3: 0 };
+
+        // DATASETS
+        const level1Items = [
+            { id: 'dik1', label: 'Unprocessed sales receipts numbers', category: 'Data' },
+            { id: 'dik2', label: 'Raw facts collected & stored', category: 'Data' },
+            { id: 'dik3', label: 'Customer age list without context', category: 'Data' },
+            { id: 'dik4', label: 'Monthly Sales Summary Report', category: 'Information' },
+            { id: 'dik5', label: 'Data organized to improve decision-making', category: 'Information' },
+            { id: 'dik6', label: 'Financial chart of quarterly profit margins', category: 'Information' },
+            { id: 'dik7', label: 'Understanding gained to take action', category: 'Knowledge' },
+            { id: 'dik8', label: 'Managerial insight that discount increases profit', category: 'Knowledge' },
+            { id: 'dik9', label: 'Experience-driven pricing strategy', category: 'Knowledge' }
+        ];
+
+        const level2Items = [
+            { id: 'c1', label: 'Users, IS staff, and managers', category: 'People' },
+            { id: 'c2', label: 'Policies and rules for system use', category: 'Procedures' },
+            { id: 'c3', label: 'Accounting Apps & Enterprise OS', category: 'Software' },
+            { id: 'c4', label: 'Computers, servers & scanners', category: 'Hardware' },
+            { id: 'c5', label: 'Raw facts stored & processed', category: 'Data' },
+            { id: 'c6', label: 'Connections sharing info between devices', category: 'Networks' },
+            { id: 'c7', label: 'System Administrators', category: 'People' },
+            { id: 'c8', label: 'Wi-Fi, Fiber cables & Routers', category: 'Networks' }
+        ];
+
+        const level3Questions = [
+            {
+                category: "DIK Hierarchy",
+                question: "An accountant looks at a monthly Income Statement showing a 15% drop in net profit and realizes that raw material costs spiked due to supplier rate increases. What level of the DIK hierarchy does this understanding represent?",
+                options: [
+                    { text: "Data", correct: false },
+                    { text: "Information", correct: false },
+                    { text: "Knowledge", correct: true }
+                ],
+                explanation: "Knowledge is the understanding gained from information, experience, and analysis that enables a person to make decisions or take action."
+            },
+            {
+                category: "IS Components",
+                question: "A company's Internal Controls manual mandates that 'All purchase orders above $10,000 must be approved by two senior managers.' Which component of an Information System does this rule represent?",
+                options: [
+                    { text: "Procedures", correct: true },
+                    { text: "Software", correct: false },
+                    { text: "People", correct: false },
+                    { text: "Data", correct: false }
+                ],
+                explanation: "Procedures are the policies and operational rules that govern how the information system is used and managed."
+            },
+            {
+                category: "DIK Hierarchy",
+                question: "A barcode scanner records '08493021948' at a checkout counter before any description or price is attached. This unorganized entry is best classified as:",
+                options: [
+                    { text: "Information", correct: false },
+                    { text: "Data", correct: true },
+                    { text: "Knowledge", correct: false }
+                ],
+                explanation: "Data consists of raw facts collected, recorded, and stored before being processed into meaningful context."
+            },
+            {
+                category: "IS Components",
+                question: "An ERP system like SAP or QuickBooks that processes transaction logs and calculates payroll belongs to which component of an Information System?",
+                options: [
+                    { text: "Hardware", correct: false },
+                    { text: "Software", correct: true },
+                    { text: "Procedures", correct: false },
+                    { text: "Networks", correct: false }
+                ],
+                explanation: "Software includes programs and applications (apps, operating systems, enterprise systems) that process data."
+            },
+            {
+                category: "IS Components",
+                question: "Fiber-optic cables, switches, and routers that connect the corporate headquarters' servers with local branch office terminals represent:",
+                options: [
+                    { text: "Hardware", correct: false },
+                    { text: "Software", correct: false },
+                    { text: "Networks", correct: true },
+                    { text: "Data", correct: false }
+                ],
+                explanation: "Networks consist of connections, protocols, and communication links that allow components to share information."
+            }
+        ];
+
+        let currentQuizIndex = 0;
+        let quizAnswersState = [];
+
+        // --- DRAG AND DROP MECHANICS ---
+        let draggedElementId = null;
+
+        function allowDrop(ev) {
+            ev.preventDefault();
+        }
+
+        function drag(ev) {
+            initAudio();
+            draggedElementId = ev.target.id;
+            ev.dataTransfer.setData("text/plain", ev.target.id);
+        }
+
+        function dragEnter(ev) {
+            let zone = ev.target.closest('.drop-zone');
+            if (zone) zone.classList.add('drag-over');
+        }
+
+        function dragLeave(ev) {
+            let zone = ev.target.closest('.drop-zone');
+            if (zone) zone.classList.remove('drag-over');
+        }
+
+        function drop(ev, targetCategory) {
+            ev.preventDefault();
+            document.querySelectorAll('.drop-zone').forEach(z => z.classList.remove('drag-over'));
+            
+            const id = ev.dataTransfer ? ev.dataTransfer.getData("text/plain") : draggedElementId;
+            const card = document.getElementById(id);
+            if (!card) return;
+
+            if (targetCategory === 'pool') {
+                const poolId = currentLevel === 1 ? 'dikPool' : 'compPool';
+                document.getElementById(poolId).appendChild(card);
+            } else {
+                const prefix = currentLevel === 1 ? 'dik-' : 'comp-';
+                const container = document.getElementById(prefix + targetCategory);
+                if (container) {
+                    container.appendChild(card);
+                }
+            }
+
+            // Reset status styling on movement
+            card.classList.remove('border-emerald-500', 'border-rose-500', 'bg-emerald-950/40', 'bg-rose-950/40');
+            card.classList.add('border-slate-700', 'bg-slate-800');
+
+            playSound('drop');
+        }
+
+        // TOUCH DRAG AND DROP SUPPORT FOR MOBILE
+        let touchDragElement = null;
+        let touchClone = null;
+
+        function setupTouchEvents(card) {
+            card.addEventListener('touchstart', (e) => {
+                initAudio();
+                touchDragElement = card;
+                const touch = e.touches[0];
+                
+                touchClone = card.cloneNode(true);
+                touchClone.classList.add('touch-dragging');
+                touchClone.style.width = card.offsetWidth + 'px';
+                touchClone.style.left = (touch.clientX - card.offsetWidth / 2) + 'px';
+                touchClone.style.top = (touch.clientY - card.offsetHeight / 2) + 'px';
+                document.body.appendChild(touchClone);
+
+                card.style.opacity = '0.4';
+            }, { passive: false });
+
+            card.addEventListener('touchmove', (e) => {
+                if (!touchClone) return;
+                e.preventDefault();
+                const touch = e.touches[0];
+                touchClone.style.left = (touch.clientX - touchClone.offsetWidth / 2) + 'px';
+                touchClone.style.top = (touch.clientY - touchClone.offsetHeight / 2) + 'px';
+
+                // Highlight drop zones under touch
+                const elem = document.elementFromPoint(touch.clientX, touch.clientY);
+                document.querySelectorAll('.drop-zone').forEach(z => z.classList.remove('drag-over'));
+                if (elem) {
+                    const zone = elem.closest('.drop-zone');
+                    if (zone) zone.classList.add('drag-over');
+                }
+            }, { passive: false });
+
+            card.addEventListener('touchend', (e) => {
+                if (!touchClone) return;
+                const touch = e.changedTouches[0];
+                const elem = document.elementFromPoint(touch.clientX, touch.clientY);
+                
+                if (touchClone) {
+                    touchClone.remove();
+                    touchClone = null;
+                }
+                card.style.opacity = '1';
+                document.querySelectorAll('.drop-zone').forEach(z => z.classList.remove('drag-over'));
+
+                if (elem) {
+                    const dropZone = elem.closest('.drop-zone');
+                    const dragPool = elem.closest('.drag-pool');
+                    
+                    if (dropZone) {
+                        const cat = dropZone.getAttribute('data-category');
+                        drop({ preventDefault: () => {} }, cat);
+                    } else if (dragPool) {
+                        drop({ preventDefault: () => {} }, 'pool');
+                    }
+                }
+                touchDragElement = null;
+            });
+        }
+
+        // --- LEVEL RENDERERS ---
+        function renderLevel1() {
+            const pool = document.getElementById('dikPool');
+            pool.innerHTML = '';
+            
+            // Clear buckets
+            ['Data', 'Information', 'Knowledge'].forEach(cat => {
+                document.getElementById('dik-' + cat).innerHTML = '';
+            });
+
+            level1Items.forEach(item => {
+                const card = createCardElement(item);
+                pool.appendChild(card);
+            });
+        }
+
+        function renderLevel2() {
+            const pool = document.getElementById('compPool');
+            pool.innerHTML = '';
+
+            ['People', 'Procedures', 'Software', 'Hardware', 'Data', 'Networks'].forEach(cat => {
+                document.getElementById('comp-' + cat).innerHTML = '';
+            });
+
+            level2Items.forEach(item => {
+                const card = createCardElement(item);
+                pool.appendChild(card);
+            });
+        }
+
+        function createCardElement(item) {
+            const div = document.createElement('div');
+            div.id = item.id;
+            div.setAttribute('draggable', 'true');
+            div.setAttribute('data-category', item.category);
+            div.ondragstart = drag;
+            div.className = "drag-item bg-slate-800 border border-slate-700/80 hover:border-slate-500 rounded-xl p-3 text-xs sm:text-sm font-medium text-slate-200 shadow-md flex items-center justify-between gap-2";
+            div.innerHTML = `
+                <span>${item.label}</span>
+                <i class="fa-solid fa-grip-vertical text-slate-500 text-xs"></i>
+            `;
+            setupTouchEvents(div);
+            return div;
+        }
+
+        // --- CHECKING & SCORING LOGIC ---
+        function checkLevel1() {
+            let correct = 0;
+            const total = level1Items.length;
+
+            level1Items.forEach(item => {
+                const card = document.getElementById(item.id);
+                const parentZone = card.closest('.drop-zone');
+                
+                if (parentZone) {
+                    const chosenCat = parentZone.getAttribute('data-category');
+                    if (chosenCat === item.category) {
+                        correct++;
+                        card.classList.remove('border-slate-700', 'bg-slate-800', 'border-rose-500', 'bg-rose-950/40');
+                        card.classList.add('border-emerald-500', 'bg-emerald-950/40');
+                    } else {
+                        card.classList.remove('border-slate-700', 'bg-slate-800', 'border-emerald-500', 'bg-emerald-950/40');
+                        card.classList.add('border-rose-500', 'bg-rose-950/40');
+                    }
+                } else {
+                    card.classList.remove('border-slate-700', 'bg-slate-800', 'border-emerald-500', 'bg-emerald-950/40');
+                    card.classList.add('border-rose-500', 'bg-rose-950/40');
+                }
+            });
+
+            const points = Math.round((correct / total) * 100);
+            levelScores[1] = points;
+            updateTotalScore();
+
+            if (correct === total) {
+                playSound('correct');
+            } else {
+                playSound('wrong');
+            }
+        }
+
+        function checkLevel2() {
+            let correct = 0;
+            const total = level2Items.length;
+
+            level2Items.forEach(item => {
+                const card = document.getElementById(item.id);
+                const parentZone = card.closest('.drop-zone');
+
+                if (parentZone) {
+                    const chosenCat = parentZone.getAttribute('data-category');
+                    if (chosenCat === item.category) {
+                        correct++;
+                        card.classList.remove('border-slate-700', 'bg-slate-800', 'border-rose-500', 'bg-rose-950/40');
+                        card.classList.add('border-emerald-500', 'bg-emerald-950/40');
+                    } else {
+                        card.classList.remove('border-slate-700', 'bg-slate-800', 'border-emerald-500', 'bg-emerald-950/40');
+                        card.classList.add('border-rose-500', 'bg-rose-950/40');
+                    }
+                } else {
+                    card.classList.remove('border-slate-700', 'bg-slate-800', 'border-emerald-500', 'bg-emerald-950/40');
+                    card.classList.add('border-rose-500', 'bg-rose-950/40');
+                }
+            });
+
+            const points = Math.round((correct / total) * 100);
+            levelScores[2] = points;
+            updateTotalScore();
+
+            if (correct === total) {
+                playSound('correct');
+            } else {
+                playSound('wrong');
+            }
+        }
+
+        // --- LEVEL 3: QUIZ ENGINE ---
+        function renderQuizQuestion() {
+            const q = level3Questions[currentQuizIndex];
+            document.getElementById('quizCounter').innerText = `Question ${currentQuizIndex + 1} of ${level3Questions.length}`;
+            document.getElementById('quizCategory').innerText = q.category;
+            document.getElementById('quizQuestion').innerText = q.question;
+
+            const optionsContainer = document.getElementById('quizOptions');
+            optionsContainer.innerHTML = '';
+
+            document.getElementById('quizFeedback').classList.add('hidden');
+
+            q.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "quiz-opt-btn text-left p-4 rounded-xl bg-slate-800/80 border border-slate-700 hover:border-blue-500 hover:bg-slate-750 font-medium text-slate-200 text-sm sm:text-base transition flex items-center justify-between";
+                btn.onclick = () => selectQuizOption(idx);
+                btn.innerHTML = `
+                    <span>${opt.text}</span>
+                    <i class="fa-regular fa-circle text-slate-500"></i>
+                `;
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        function selectQuizOption(optionIdx) {
+            const q = level3Questions[currentQuizIndex];
+            const isCorrect = q.options[optionIdx].correct;
+
+            const btns = document.querySelectorAll('.quiz-opt-btn');
+            btns.forEach((btn, idx) => {
+                btn.disabled = true;
+                if (q.options[idx].correct) {
+                    btn.className = "quiz-opt-btn text-left p-4 rounded-xl bg-emerald-950/60 border-2 border-emerald-500 font-bold text-emerald-200 text-sm sm:text-base flex items-center justify-between";
+                    btn.querySelector('i').className = "fa-solid fa-circle-check text-emerald-400";
+                } else if (idx === optionIdx && !isCorrect) {
+                    btn.className = "quiz-opt-btn text-left p-4 rounded-xl bg-rose-950/60 border-2 border-rose-500 font-bold text-rose-200 text-sm sm:text-base flex items-center justify-between";
+                    btn.querySelector('i').className = "fa-solid fa-circle-xmark text-rose-400";
+                } else {
+                    btn.style.opacity = '0.5';
+                }
+            });
+
+            quizAnswersState[currentQuizIndex] = isCorrect;
+
+            const feedback = document.getElementById('quizFeedback');
+            const feedbackTitle = document.getElementById('quizFeedbackTitle');
+            const feedbackText = document.getElementById('quizFeedbackText');
+
+            feedback.classList.remove('hidden', 'bg-emerald-950/40', 'border-emerald-500/50', 'bg-rose-950/40', 'border-rose-500/50');
+
+            if (isCorrect) {
+                playSound('correct');
+                feedback.classList.add('bg-emerald-950/40', 'border-emerald-500/50');
+                feedbackTitle.className = "font-bold text-sm mb-1 flex items-center gap-2 text-emerald-400";
+                feedbackTitle.innerHTML = `<i class="fa-solid fa-circle-check"></i> Correct Choice!`;
+            } else {
+                playSound('wrong');
+                feedback.classList.add('bg-rose-950/40', 'border-rose-500/50');
+                feedbackTitle.className = "font-bold text-sm mb-1 flex items-center gap-2 text-rose-400";
+                feedbackTitle.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Incorrect`;
+            }
+
+            feedbackText.innerText = q.explanation;
+
+            // Recalculate Level 3 score
+            const correctCount = quizAnswersState.filter(Boolean).length;
+            levelScores[3] = Math.round((correctCount / level3Questions.length) * 100);
+            updateTotalScore();
+        }
+
+        function nextQuestion() {
+            if (currentQuizIndex < level3Questions.length - 1) {
+                currentQuizIndex++;
+                renderQuizQuestion();
+            } else {
+                checkGameCompletion();
+            }
+        }
+
+        // --- GLOBAL NAVIGATION & UTILS ---
+        function switchLevel(levelNum) {
+            currentLevel = levelNum;
+            document.querySelectorAll('.level-section').forEach(sec => sec.classList.add('hidden'));
+            document.getElementById('level' + levelNum).classList.remove('hidden');
+
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('tab' + levelNum).classList.add('active');
+        }
+
+        function updateTotalScore() {
+            const total = levelScores[1] + levelScores[2] + levelScores[3];
+            document.getElementById('totalScoreDisplay').innerText = `${total} / 300`;
+
+            if (total === 300) {
+                setTimeout(() => {
+                    document.getElementById('victoryOverlay').classList.remove('hidden');
+                    playSound('correct');
+                }, 500);
+            }
+        }
+
+        function checkGameCompletion() {
+            const total = levelScores[1] + levelScores[2] + levelScores[3];
+            document.getElementById('finalScoreText').innerText = `${total} / 300`;
+            document.getElementById('victoryOverlay').classList.remove('hidden');
+        }
+
+        function resetWholeGame() {
+            levelScores = { 1: 0, 2: 0, 3: 0 };
+            currentQuizIndex = 0;
+            quizAnswersState = [];
+            updateTotalScore();
+            renderLevel1();
+            renderLevel2();
+            renderQuizQuestion();
+            document.getElementById('victoryOverlay').classList.add('hidden');
+            switchLevel(1);
+        }
+
+        // Initialize on window load
+        window.onload = function() {
+            renderLevel1();
+            renderLevel2();
+            renderQuizQuestion();
+        };
+    </script>
+</body>
+</html>
